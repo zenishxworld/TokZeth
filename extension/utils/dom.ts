@@ -161,7 +161,8 @@ function replaceInContentEditable(
       // handle natively — this is the most compatible path.
       const ok = document.execCommand("insertText", false, newText);
       if (ok) {
-        element.dispatchEvent(new Event("input", { bubbles: true }));
+        // Do NOT manually dispatch 'input' here. execCommand natively fires it.
+        // Firing it manually causes duplicate insertions in ProseMirror/React wrappers.
         return { success: true, method: "exec-command" };
       }
 
@@ -262,7 +263,6 @@ function insertViaRange(
 
   const ok = document.execCommand("insertText", false, text);
   if (ok) {
-    root.dispatchEvent(new Event("input", { bubbles: true }));
     return true;
   }
 

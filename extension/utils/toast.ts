@@ -105,7 +105,7 @@ const SHADOW_STYLES = `
 /* ---- Loader ---- */
 .tz-loader {
   position: fixed;
-  bottom: 24px;
+  top: 24px;
   right: 24px;
   display: flex;
   align-items: center;
@@ -160,7 +160,7 @@ const SHADOW_STYLES = `
 /* ---- Toast ---- */
 .tz-toast {
   position: fixed;
-  bottom: 24px;
+  top: 24px;
   right: 24px;
   display: flex;
   align-items: center;
@@ -177,13 +177,13 @@ const SHADOW_STYLES = `
   max-width: 320px;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
   z-index: 2147483647;
 }
-/* When loader is also visible, offset toast above it */
-.tz-toast { bottom: 72px; }
+/* When loader is also visible, offset toast below it */
+.tz-toast { top: 72px; }
 
 .tz-toast--visible {
   opacity: 1;
