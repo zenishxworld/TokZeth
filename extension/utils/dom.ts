@@ -25,6 +25,26 @@ export interface ReplaceResult {
   method: "input-value" | "exec-command" | "manual-range" | "text-search" | "failed";
 }
 
+export const getSelectionCoords = (selection: Selection | null) => {
+  if (!selection || selection.rangeCount === 0) return { x: 0, y: 0 };
+  const range = selection.getRangeAt(0).cloneRange();
+  range.collapse(false);
+  
+  let rect = range.getBoundingClientRect();
+  if (rect.x === 0 && rect.y === 0) {
+    const span = document.createElement('span');
+    if (span.getClientRects) {
+      span.appendChild(document.createTextNode('\u200b'));
+      range.insertNode(span);
+      rect = span.getBoundingClientRect();
+      const parent = span.parentNode;
+      parent?.removeChild(span);
+      parent?.normalize();
+    }
+  }
+  return { x: rect.left + window.scrollX, y: rect.top + window.scrollY };
+};
+
 // ---- Capture ----
 
 export function captureSelection(): SelectionContext | null {
