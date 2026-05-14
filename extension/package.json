@@ -1,0 +1,39 @@
+{
+  "name": "@tokzeth/extension",
+  "version": "1.0.0",
+  "description": "TokZeth AI Prompt Optimizer — Browser Extension",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "package": "plasmo package"
+  },
+  "dependencies": {
+    "plasmo": "^0.89.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@plasmohq/messaging": "^0.6.2",
+    "@plasmohq/storage": "^1.12.0",
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^20.14.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.4.5"
+  },
+  "manifest": {
+    "host_permissions": [
+      "https://*/*",
+      "http://localhost/*"
+    ],
+    "permissions": [
+      "activeTab",
+      "storage",
+      "scripting",
+      "contextMenus"
+    ],
+    "content_security_policy": {
+      "extension_pages": "script-src 'self'; object-src 'self'"
+    }
+  }
+}

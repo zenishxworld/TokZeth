@@ -1,0 +1,19 @@
+{
+  "name": "tokzeth",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "extension",
+    "web",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:extension": "npm run dev --workspace=extension",
+    "build:backend": "npm run build --workspace=backend",
+    "build:web": "npm run build --workspace=web",
+    "build:extension": "npm run build --workspace=extension"
+  }
+}
