@@ -1,5 +1,6 @@
 import type { PlasmoCSConfig } from "plasmo";
-import { getActiveSelection, replaceSelectedText } from "../utils/dom";
+import { captureSelection, replaceSelection } from "../utils/dom";
+import { showLoader, hideLoader, showToast } from "../utils/toast";
 import { getSettings } from "../storage/settings";
 
 export const config: PlasmoCSConfig = {
@@ -7,110 +8,138 @@ export const config: PlasmoCSConfig = {
   run_at: "document_idle",
 };
 
-// Stores the last active selection so the popup can trigger replacement
-let lastSelection: ReturnType<typeof getActiveSelection> = null;
+// ---- Proactive selection cache ----
+// Saved on every mouseup / selectionchange so it's available after the popup
+// window opens (which steals focus and clears window.getSelection()).
+let proactiveCtx: ReturnType<typeof captureSelection> = null;
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-// ---- Keyboard shortcut: Alt+Z triggers refine on selected text ----
+function saveCurrentSelection(): void {
+  const ctx = captureSelection();
+  if (ctx) proactiveCtx = ctx;
+}
+
+document.addEventListener("mouseup", saveCurrentSelection);
+
+document.addEventListener("selectionchange", () => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(saveCurrentSelection, 80);
+});
+
+// ---- Alt+Z keyboard shortcut ----
 document.addEventListener("keydown", async (e: KeyboardEvent) => {
-  // Alt+Z shortcut
   if (e.altKey && e.key === "z") {
     e.preventDefault();
     await triggerRefine();
   }
 });
 
-// ---- Listen for messages from background or popup ----
+// ---- Chrome message handlers ----
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
+    // Popup asks: what text does the user have selected?
+    // We return the proactively saved context — NOT window.getSelection()
+    // because by the time the popup sends this message, focus has moved to
+    // the popup window and the page selection is invisible/gone.
     case "GET_SELECTED_TEXT": {
-      const ctx = getActiveSelection();
-      sendResponse({ text: ctx?.selectedText ?? null });
+      sendResponse({ text: proactiveCtx?.selectedText ?? null });
       break;
     }
+
+    // Popup says: replace the original text with the optimized version
     case "REPLACE_TEXT": {
-      if (lastSelection && message.payload?.text) {
-        replaceSelectedText(lastSelection, message.payload.text);
-        lastSelection = null;
-        sendResponse({ success: true });
-      } else {
-        sendResponse({ success: false, error: "No active selection context" });
+      const ctx = proactiveCtx;
+      const newText: string | undefined = message.payload?.text;
+
+      if (!ctx || !newText) {
+        sendResponse({ success: false, error: "No saved selection context" });
+        break;
       }
+
+      const result = replaceSelection(ctx, newText);
+      proactiveCtx = null; // consumed — clear so it can't be used twice
+
+      if (!result.success) {
+        // Clipboard fallback — user never loses the optimized text
+        navigator.clipboard
+          .writeText(newText)
+          .then(() => showToast("Couldn't replace — copied to clipboard", "info"))
+          .catch(() => showToast("Replacement failed", "error"));
+      }
+
+      sendResponse({ success: result.success, method: result.method });
       break;
     }
+
     case "CONTEXT_MENU_REFINE": {
-      triggerRefine();
+      // Background forwarded a right-click "Optimize" action
+      void triggerRefine();
       break;
     }
   }
-  return true;
+
+  return true; // keep async channel open
 });
 
+// ---- Shortcut-triggered inline flow ----
+// Captures a fresh live selection (Alt+Z is pressed while selection is active),
+// calls the API via background, then replaces inline.
 async function triggerRefine(): Promise<void> {
-  const ctx = getActiveSelection();
-  if (!ctx) return;
+  // Capture fresh — selection is still live when Alt+Z fires
+  const ctx = captureSelection();
+  if (!ctx || !ctx.selectedText.trim()) return;
 
-  lastSelection = ctx;
+  // Also update proactive cache so popup Replace still works if user opens it
+  proactiveCtx = ctx;
 
   const settings = await getSettings();
 
-  // Show visual loading indicator
-  showLoadingIndicator(ctx.element);
+  showLoader("Optimizing prompt");
 
-  const response = await chrome.runtime.sendMessage({
-    type: "REFINE_TEXT",
-    payload: {
-      text: ctx.selectedText,
-      mode: settings.activeMode,
-      userId: settings.userId,
-    },
-  });
+  let response: { success: boolean; optimized?: string; error?: string };
+  try {
+    response = await chrome.runtime.sendMessage({
+      type: "REFINE_TEXT",
+      payload: {
+        text: ctx.selectedText,
+        mode: settings.activeMode,
+        userId: settings.userId,
+      },
+    });
+  } catch {
+    hideLoader();
+    showToast("Extension error — try again", "error");
+    return;
+  }
 
-  hideLoadingIndicator(ctx.element);
+  hideLoader();
 
   if (response?.success && response.optimized) {
-    replaceSelectedText(ctx, response.optimized);
-    showSuccessFlash(ctx.element);
+    const result = replaceSelection(ctx, response.optimized);
+    proactiveCtx = null;
+
+    if (result.success) {
+      flashElement(ctx.element);
+      showToast("Prompt optimized", "success", 2000);
+    } else {
+      await navigator.clipboard.writeText(response.optimized).catch(() => {});
+      showToast("Optimized — copied to clipboard", "info");
+    }
   } else {
-    showErrorToast(response?.error ?? "Optimization failed");
+    showToast(response?.error ?? "Optimization failed", "error");
   }
 }
 
-// ---- Visual feedback ----
-
-function showLoadingIndicator(el: HTMLElement): void {
-  el.style.opacity = "0.6";
-  el.style.transition = "opacity 0.2s ease";
-}
-
-function hideLoadingIndicator(el: HTMLElement): void {
-  el.style.opacity = "1";
-}
-
-function showSuccessFlash(el: HTMLElement): void {
-  el.style.outline = "2px solid #6366f1";
-  el.style.transition = "outline 0.3s ease";
+// Brief indigo outline flash to confirm replacement happened
+function flashElement(el: HTMLElement): void {
+  const prevOutline = el.style.outline;
+  const prevTransition = el.style.transition;
+  el.style.transition = "outline 0.12s ease";
+  el.style.outline = "2px solid rgba(99, 102, 241, 0.75)";
   setTimeout(() => {
-    el.style.outline = "";
-  }, 1000);
-}
-
-function showErrorToast(message: string): void {
-  const toast = document.createElement("div");
-  toast.style.cssText = `
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    background: #1e1e2e;
-    color: #f38ba8;
-    border: 1px solid #f38ba8;
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-family: system-ui, sans-serif;
-    font-size: 14px;
-    z-index: 999999;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-  `;
-  toast.textContent = `TokZeth: ${message}`;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
+    el.style.outline = prevOutline;
+    setTimeout(() => {
+      el.style.transition = prevTransition;
+    }, 200);
+  }, 700);
 }

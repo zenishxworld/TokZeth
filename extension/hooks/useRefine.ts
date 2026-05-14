@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { OptimizeMode } from "../storage/settings";
+import { addHistoryEntry } from "../storage/history";
 
 interface UseRefineState {
   loading: boolean;
@@ -12,7 +13,6 @@ interface UseRefineReturn extends UseRefineState {
   reset: () => void;
 }
 
-// Hook used by the popup to trigger text optimization
 export function useRefine(): UseRefineReturn {
   const [state, setState] = useState<UseRefineState>({
     loading: false,
@@ -33,13 +33,23 @@ export function useRefine(): UseRefineReturn {
       });
 
       if (response?.success && response.optimized) {
-        setState({ loading: false, error: null, result: response.optimized });
-        return response.optimized;
-      } else {
-        const err = response?.error ?? "Optimization failed";
-        setState({ loading: false, error: err, result: null });
-        return null;
+        const optimized: string = response.optimized;
+
+        // Save to history — non-blocking, failure is silently swallowed
+        addHistoryEntry({
+          original: text,
+          optimized,
+          mode,
+          timestamp: Date.now(),
+        }).catch(() => {});
+
+        setState({ loading: false, error: null, result: optimized });
+        return optimized;
       }
+
+      const err = response?.error ?? "Optimization failed";
+      setState({ loading: false, error: err, result: null });
+      return null;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       setState({ loading: false, error: message, result: null });
@@ -47,9 +57,7 @@ export function useRefine(): UseRefineReturn {
     }
   };
 
-  const reset = () => {
-    setState({ loading: false, error: null, result: null });
-  };
+  const reset = () => setState({ loading: false, error: null, result: null });
 
   return { ...state, refine, reset };
 }

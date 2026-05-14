@@ -1,23 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { getSettings, saveMode, type OptimizeMode } from "../storage/settings";
 import { useRefine } from "../hooks/useRefine";
 
-const MODES: { value: OptimizeMode; label: string; icon: string; desc: string }[] = [
-  { value: "enhance",      label: "Enhance",      icon: "✦", desc: "More clear & specific" },
-  { value: "compress",     label: "Compress",     icon: "◈", desc: "Shorter & direct" },
-  { value: "coding",       label: "Coding",       icon: "⌨", desc: "Dev-ready prompt" },
-  { value: "professional", label: "Professional", icon: "◉", desc: "Formal business tone" },
-  { value: "humanize",     label: "Humanize",     icon: "◌", desc: "Natural & warm" },
-  { value: "email",        label: "Email",        icon: "◷", desc: "Structured email" },
+const MODES: {
+  value: OptimizeMode;
+  label: string;
+  icon: string;
+  desc: string;
+}[] = [
+  { value: "enhance",      label: "Enhance",      icon: "✦", desc: "Clearer, more specific, structured" },
+  { value: "compress",     label: "Compress",     icon: "◈", desc: "Ultra-concise, token-efficient" },
+  { value: "coding",       label: "Coding",       icon: "⌨", desc: "Full technical dev spec" },
+  { value: "professional", label: "Professional", icon: "◉", desc: "Executive business tone" },
+  { value: "humanize",     label: "Humanize",     icon: "◌", desc: "Natural, human voice" },
+  { value: "email",        label: "Email",        icon: "◷", desc: "Complete send-ready email" },
 ];
 
 export default function App() {
   const [activeMode, setActiveMode] = useState<OptimizeMode>("enhance");
-  const [selectedText, setSelectedText] = useState<string>("");
-  const [optimizedText, setOptimizedText] = useState<string>("");
+  const [selectedText, setSelectedText]   = useState("");
+  const [optimizedText, setOptimizedText] = useState("");
+  const [resultVisible, setResultVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const { loading, error, refine } = useRefine();
 
-  // Load saved mode + get selected text from active tab
+  // On open: load saved mode and pull selected text from the active tab
   useEffect(() => {
     getSettings().then((s) => setActiveMode(s.activeMode));
 
@@ -27,11 +36,24 @@ export default function App() {
         tab.id,
         { type: "GET_SELECTED_TEXT" },
         (res) => {
+          if (chrome.runtime.lastError) return; // tab may not have the content script
           if (res?.text) setSelectedText(res.text);
         }
       );
     });
   }, []);
+
+  // Trigger result slide-in animation on a new result
+  useEffect(() => {
+    if (optimizedText) {
+      // Next frame so the DOM node exists before we add the visible class
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => setResultVisible(true))
+      );
+    } else {
+      setResultVisible(false);
+    }
+  }, [optimizedText]);
 
   const handleModeChange = async (mode: OptimizeMode) => {
     setActiveMode(mode);
@@ -39,12 +61,11 @@ export default function App() {
   };
 
   const handleRefine = async () => {
-    if (!selectedText.trim()) return;
+    if (!selectedText.trim() || loading) return;
     setOptimizedText("");
+    setResultVisible(false);
     const result = await refine(selectedText, activeMode);
-    if (result) {
-      setOptimizedText(result);
-    }
+    if (result) setOptimizedText(result);
   };
 
   const handleReplace = () => {
@@ -62,27 +83,36 @@ export default function App() {
   const handleCopy = async () => {
     if (!optimizedText) return;
     await navigator.clipboard.writeText(optimizedText);
+    setCopied(true);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 1500);
   };
+
+  const activeModeData = MODES.find((m) => m.value === activeMode);
 
   return (
     <div className="popup-root">
-      {/* Header */}
+      {/* ---- Header ---- */}
       <div className="popup-header">
         <div className="logo">
           <span className="logo-icon">◈</span>
           <span className="logo-text">TokZeth</span>
         </div>
-        <span className="shortcut-hint">Alt+Z</span>
+        <span className="shortcut-hint">
+          <span className="shortcut-key">Alt</span>
+          <span className="shortcut-sep">+</span>
+          <span className="shortcut-key">Z</span>
+        </span>
       </div>
 
-      {/* Mode Selector */}
+      {/* ---- Mode Grid ---- */}
       <div className="mode-grid">
         {MODES.map((m) => (
           <button
             key={m.value}
-            className={`mode-btn ${activeMode === m.value ? "active" : ""}`}
+            type="button"
+            className={`mode-btn${activeMode === m.value ? " active" : ""}`}
             onClick={() => handleModeChange(m.value)}
-            title={m.desc}
           >
             <span className="mode-icon">{m.icon}</span>
             <span className="mode-label">{m.label}</span>
@@ -90,49 +120,74 @@ export default function App() {
         ))}
       </div>
 
-      {/* Selected Text Preview */}
+      {/* Active mode description */}
+      {activeModeData && (
+        <div className="mode-active-desc">{activeModeData.desc}</div>
+      )}
+
+      {/* ---- Selected Text ---- */}
       {selectedText ? (
         <div className="text-box">
-          <div className="text-box-label">Selected</div>
+          <div className="text-box-header">
+            <span className="text-box-label">Selected</span>
+            <span className="char-count">{selectedText.length} chars</span>
+          </div>
           <div className="text-box-content">{selectedText}</div>
         </div>
       ) : (
         <div className="empty-state">
-          Select text on the page, then click Optimize
+          <span className="empty-icon">◎</span>
+          <span>Select text on the page</span>
+          <span className="empty-hint">or press Alt+Z anywhere</span>
         </div>
       )}
 
-      {/* Refine Button */}
+      {/* ---- Optimize Button ---- */}
       <button
-        className={`refine-btn ${loading ? "loading" : ""}`}
+        type="button"
+        className={`refine-btn${loading ? " loading" : ""}${!selectedText.trim() ? " disabled" : ""}`}
         onClick={handleRefine}
         disabled={loading || !selectedText.trim()}
       >
         {loading ? (
-          <span className="spinner" />
+          <span className="btn-loading-content">
+            <span className="btn-lightning">⚡</span>
+            <span>Optimizing</span>
+            <span className="btn-dots">
+              <span /><span /><span />
+            </span>
+          </span>
         ) : (
-          <>
-            <span>✦</span> Optimize Prompt
-          </>
+          <span className="btn-idle-content">
+            <span>✦</span>
+            <span>Optimize Prompt</span>
+          </span>
         )}
       </button>
 
-      {/* Error */}
+      {/* ---- Error ---- */}
       {error && <div className="error-msg">{error}</div>}
 
-      {/* Optimized Result */}
+      {/* ---- Result ---- */}
       {optimizedText && (
-        <div className="result-box">
+        <div className={`result-box${resultVisible ? " result-box--visible" : ""}`}>
           <div className="result-header">
-            <span className="result-label">Optimized</span>
+            <span className="result-label">
+              <span className="result-dot" />
+              Optimized
+            </span>
             <div className="result-actions">
-              <button className="action-btn" onClick={handleCopy} title="Copy">
-                Copy
+              <button
+                type="button"
+                className={`action-btn${copied ? " copied" : ""}`}
+                onClick={handleCopy}
+              >
+                {copied ? "✓ Copied" : "Copy"}
               </button>
               <button
+                type="button"
                 className="action-btn primary"
                 onClick={handleReplace}
-                title="Replace selected text"
               >
                 Replace ↩
               </button>
@@ -142,9 +197,10 @@ export default function App() {
         </div>
       )}
 
-      {/* Footer */}
+      {/* ---- Footer ---- */}
       <div className="popup-footer">
-        <span>Mode: <strong>{activeMode}</strong></span>
+        <span className="footer-mode-label">Mode</span>
+        <span className="footer-mode-value">{activeMode}</span>
       </div>
     </div>
   );
