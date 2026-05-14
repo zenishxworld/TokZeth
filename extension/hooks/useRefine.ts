@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { OptimizeMode } from "../storage/settings";
 import { addHistoryEntry } from "../storage/history";
+import { getCachedOptimization, setCachedOptimization } from "../utils/cache";
 
 interface UseRefineState {
   loading: boolean;
@@ -20,11 +21,17 @@ export function useRefine(): UseRefineReturn {
     result: null,
   });
 
-  const refine = async (
+  const refine = useCallback(async (
     text: string,
     mode: OptimizeMode
   ): Promise<string | null> => {
     setState({ loading: true, error: null, result: null });
+
+    const cached = getCachedOptimization(text, mode);
+    if (cached) {
+      setState({ loading: false, error: null, result: cached });
+      return cached;
+    }
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -34,6 +41,8 @@ export function useRefine(): UseRefineReturn {
 
       if (response?.success && response.optimized) {
         const optimized: string = response.optimized;
+        
+        setCachedOptimization(text, mode, optimized);
 
         // Save to history — non-blocking, failure is silently swallowed
         addHistoryEntry({
@@ -55,9 +64,9 @@ export function useRefine(): UseRefineReturn {
       setState({ loading: false, error: message, result: null });
       return null;
     }
-  };
+  }, []);
 
-  const reset = () => setState({ loading: false, error: null, result: null });
+  const reset = useCallback(() => setState({ loading: false, error: null, result: null }), []);
 
   return { ...state, refine, reset };
 }
