@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { getSettings, saveMode, type OptimizeMode } from "../storage/settings";
 import { useRefine } from "../hooks/useRefine";
+import { useLoadingMessages } from "../hooks/useLoadingMessages";
+import { detectContext, type DetectedContext } from "../utils/contextDetector";
+import { calculateTokenSavings } from "../utils/tokenMetrics";
+import { CompareView } from "../components/CompareView";
+import { QuickActions } from "../components/QuickActions";
 
 const MODES: {
   value: OptimizeMode;
@@ -18,13 +23,18 @@ const MODES: {
 
 export default function App() {
   const [activeMode, setActiveMode] = useState<OptimizeMode>("enhance");
+  const [suggestedMode, setSuggestedMode] = useState<OptimizeMode | null>(null);
+  
   const [selectedText, setSelectedText]   = useState("");
   const [optimizedText, setOptimizedText] = useState("");
   const [resultVisible, setResultVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tokenSavings, setTokenSavings] = useState(0);
+  
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { loading, error, refine } = useRefine();
+  const loadingMessage = useLoadingMessages(loading, 1200);
 
   // On open: load saved mode and pull selected text from the active tab
   useEffect(() => {
@@ -37,7 +47,11 @@ export default function App() {
         { type: "GET_SELECTED_TEXT" },
         (res) => {
           if (chrome.runtime.lastError) return; // tab may not have the content script
-          if (res?.text) setSelectedText(res.text);
+          if (res?.text) {
+            setSelectedText(res.text);
+            const detected = detectContext(res.text);
+            if (detected) setSuggestedMode(detected as OptimizeMode);
+          }
         }
       );
     });
@@ -46,26 +60,43 @@ export default function App() {
   // Trigger result slide-in animation on a new result
   useEffect(() => {
     if (optimizedText) {
-      // Next frame so the DOM node exists before we add the visible class
+      setTokenSavings(calculateTokenSavings(selectedText, optimizedText));
       requestAnimationFrame(() =>
         requestAnimationFrame(() => setResultVisible(true))
       );
     } else {
       setResultVisible(false);
+      setTokenSavings(0);
     }
-  }, [optimizedText]);
+  }, [optimizedText, selectedText]);
 
   const handleModeChange = async (mode: OptimizeMode) => {
     setActiveMode(mode);
+    setSuggestedMode(null); // Clear suggestion once manually picked
     await saveMode(mode);
   };
 
-  const handleRefine = async () => {
+  const handleRefine = async (forceMode?: OptimizeMode) => {
+    const targetMode = forceMode || activeMode;
     if (!selectedText.trim() || loading) return;
+    
     setOptimizedText("");
     setResultVisible(false);
-    const result = await refine(selectedText, activeMode);
+    
+    const result = await refine(selectedText, targetMode);
     if (result) setOptimizedText(result);
+  };
+
+  const handleQuickAction = async (action: "copy" | "retry" | "re_mode", mode?: OptimizeMode) => {
+    if (action === "copy") {
+      handleCopy();
+    } else if (action === "retry") {
+      await handleRefine();
+    } else if (action === "re_mode" && mode) {
+      setActiveMode(mode);
+      await saveMode(mode);
+      await handleRefine(mode);
+    }
   };
 
   const handleReplace = () => {
@@ -107,17 +138,23 @@ export default function App() {
 
       {/* ---- Mode Grid ---- */}
       <div className="mode-grid">
-        {MODES.map((m) => (
-          <button
-            key={m.value}
-            type="button"
-            className={`mode-btn${activeMode === m.value ? " active" : ""}`}
-            onClick={() => handleModeChange(m.value)}
-          >
-            <span className="mode-icon">{m.icon}</span>
-            <span className="mode-label">{m.label}</span>
-          </button>
-        ))}
+        {MODES.map((m) => {
+          const isActive = activeMode === m.value;
+          const isSuggested = suggestedMode === m.value;
+          
+          return (
+            <button
+              key={m.value}
+              type="button"
+              className={`mode-btn ${isActive ? "active" : ""} ${isSuggested && !isActive ? "suggested" : ""}`}
+              onClick={() => handleModeChange(m.value)}
+            >
+              <span className="mode-icon">{m.icon}</span>
+              <span className="mode-label">{m.label}</span>
+              {isSuggested && !isActive && <span className="mode-badge">Auto</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* Active mode description */}
@@ -145,14 +182,14 @@ export default function App() {
       {/* ---- Optimize Button ---- */}
       <button
         type="button"
-        className={`refine-btn${loading ? " loading" : ""}${!selectedText.trim() ? " disabled" : ""}`}
-        onClick={handleRefine}
+        className={`refine-btn ${loading ? "loading" : ""} ${!selectedText.trim() ? "disabled" : ""}`}
+        onClick={() => handleRefine()}
         disabled={loading || !selectedText.trim()}
       >
         {loading ? (
           <span className="btn-loading-content">
             <span className="btn-lightning">⚡</span>
-            <span>Optimizing</span>
+            <span className="btn-message">{loadingMessage}</span>
             <span className="btn-dots">
               <span /><span /><span />
             </span>
@@ -170,30 +207,30 @@ export default function App() {
 
       {/* ---- Result ---- */}
       {optimizedText && (
-        <div className={`result-box${resultVisible ? " result-box--visible" : ""}`}>
+        <div className={`result-box ${resultVisible ? "result-box--visible" : ""}`}>
           <div className="result-header">
-            <span className="result-label">
-              <span className="result-dot" />
-              Optimized
-            </span>
-            <div className="result-actions">
-              <button
-                type="button"
-                className={`action-btn${copied ? " copied" : ""}`}
-                onClick={handleCopy}
-              >
-                {copied ? "✓ Copied" : "Copy"}
-              </button>
-              <button
-                type="button"
-                className="action-btn primary"
-                onClick={handleReplace}
-              >
-                Replace ↩
-              </button>
+            <div className="result-header-left">
+              <span className="result-label">
+                <span className="result-dot" />
+                Optimized
+              </span>
+              {tokenSavings > 0 && (
+                <span className="token-savings-badge">
+                  ⚡ Saved ~{tokenSavings}%
+                </span>
+              )}
             </div>
+            <button
+              type="button"
+              className="action-btn primary"
+              onClick={handleReplace}
+            >
+              Replace ↩
+            </button>
           </div>
-          <div className="result-content">{optimizedText}</div>
+          
+          <CompareView originalText={selectedText} optimizedText={optimizedText} />
+          <QuickActions onAction={handleQuickAction} copied={copied} />
         </div>
       )}
 
