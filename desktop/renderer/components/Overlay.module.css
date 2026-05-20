@@ -1,0 +1,237 @@
+/* ── desktop/renderer/components/Overlay.module.css ── */
+/* TokZeth — dark glassmorphism floating overlay */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Glassmorphism root ── */
+.glass {
+  background: rgba(8, 8, 22, 0.94);
+  backdrop-filter: blur(52px) saturate(160%) brightness(1.05);
+  -webkit-backdrop-filter: blur(52px) saturate(160%) brightness(1.05);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.06),
+    0 8px 60px rgba(0, 0, 0, 0.72),
+    0 2px 12px rgba(139, 92, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter",
+    "Segoe UI", system-ui, sans-serif;
+  color: #e2e8f0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.overlay {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  cursor: default;
+  user-select: none;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #a78bfa 0%, #6366f1 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ctrl {
+  all: unset;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.45);
+  transition: background 0.15s, color 0.15s;
+}
+
+.ctrl:hover { background: rgba(255, 255, 255, 0.08); color: white; }
+
+.ctrl.close:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+}
+
+/* ── Content body ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Idle state ── */
+.idle-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.idle-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.idle-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.idle-sub kbd {
+  background: rgba(167, 139, 250, 0.16);
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  font-family: inherit;
+  color: #a78bfa;
+}
+
+.primary-btn {
+  margin-top: 10px;
+  padding: 9px 28px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(139, 92, 246, 0.5);
+}
+
+.primary-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Result state ── */
+.result-state {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.result-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.result-label.original   { color: rgba(248, 113, 113, 0.75); }
+.result-label.optimized  { color: rgba(167, 139, 250, 0.85); }
+
+.result-text {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.55;
+  max-height: 90px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.result-optimized {
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.result-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(167, 139, 250, 0.3), transparent);
+}
+
+/* ── Error state ── */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 30px;
+}
+
+.error-text {
+  font-size: 12.5px;
+  color: rgba(248, 113, 113, 0.85);
+  line-height: 1.45;
+}
+
+/* ── Init ── */
+.init {
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* ── Scrollbar ── */
+.content::-webkit-scrollbar {
+  width: 5px;
+}
+.content::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
+}
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}

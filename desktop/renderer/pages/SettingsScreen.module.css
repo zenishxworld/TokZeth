@@ -1,0 +1,170 @@
+/* ── desktop/renderer/pages/SettingsScreen.module.css ── */
+
+.settings-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.back-btn {
+  all: unset;
+  cursor: pointer;
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 4px 8px;
+  border-radius: 7px;
+  transition: background 0.15s, color 0.15s;
+}
+.back-btn:hover { background: rgba(255, 255, 255, 0.07); color: white; }
+
+.settings-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.settings-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── group ── */
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setting-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.setting-input {
+  all: unset;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  background: rgba(0, 0, 0, 0.32);
+  color: #e2e8f0;
+  font-size: 12.5px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.setting-input:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.7);
+}
+.setting-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.setting-hint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.28);
+  line-height: 1.4;
+}
+
+/* ── mode grid ── */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.mode-chip {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  border-radius: 10px;
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.mode-chip:hover {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.12);
+  color: #e2e8f0;
+}
+
+.mode-chip.active {
+  border-color: rgba(139, 92, 246, 0.55);
+  background: rgba(139, 92, 246, 0.22);
+  color: #a78bfa;
+}
+
+/* ── toggles ── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.toggle-row:last-of-type {
+  border-bottom: none;
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.toggle-row input[type="checkbox"] {
+  appearance: none;
+  width: 36px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-row input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.toggle-row input:checked {
+  background: #8b5cf6;
+}
+
+.toggle-row input:checked::after {
+  transform: translateX(16px);
+  background: white;
+}
