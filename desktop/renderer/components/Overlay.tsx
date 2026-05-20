@@ -4,7 +4,7 @@
 // Functions as the window frame + inner content
 // ───
 // Position: always-on-top, frameless, follows screen center
-// Shortcut: Alt+Z — handled in main, fires trigger event
+// Shortcut: Alt+Shift+Z — handled in main, fires trigger event
 // ────────────────────────────────────────────────────────────
 import { useEffect, useState, useCallback } from "react";
 import { LoadingDots } from "./LoadingDots";

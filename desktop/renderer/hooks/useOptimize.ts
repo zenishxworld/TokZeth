@@ -5,7 +5,7 @@
 // Flow:
 //   getClipboardText() → optimizeText() → setClipboard() → simulatePaste()
 //
-// Alt+Z fires via globalShortcut → ipcMain → this hook
+// Alt+Shift+Z fires via globalShortcut → ipcMain → this hook
 // ============================================================
 
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -32,7 +32,7 @@ export function useOptimize(initialMode: OptimizeMode) {
       const text = await clip.get();
 
       if (!text.trim()) {
-        setState({ status: "error", message: "Clipboard is empty — copy text first and press Alt+Z again." });
+        setState({ status: "error", message: "Clipboard is empty — copy text first and press Alt+Shift+Z again." });
         busyRef.current = false;
         return;
       }

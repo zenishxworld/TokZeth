@@ -175,7 +175,7 @@ export default function App() {
         <div className="empty-state">
           <span className="empty-icon">◎</span>
           <span>Select text on the page</span>
-          <span className="empty-hint">or press Alt+Z anywhere</span>
+          <span className="empty-hint">or press Alt+Shift+Z anywhere</span>
         </div>
       )}
 

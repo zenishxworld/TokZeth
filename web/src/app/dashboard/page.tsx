@@ -106,7 +106,7 @@ export default function DashboardPage() {
             <p className="text-[#64748b] text-sm">
               Your TokZeth extension is active. Select text anywhere and press{" "}
               <kbd className="px-1.5 py-0.5 text-xs bg-[#13131f] border border-[#2a2a3d] rounded font-mono text-[#818cf8]">
-                Alt+Z
+                Alt+Shift+Z
               </kbd>
             </p>
           </div>

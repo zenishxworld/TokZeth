@@ -54,7 +54,7 @@ async function saveSettings(): Promise<void> {
 
 // ── Helper: global shortcut plumbing ─────────────────────────
 function normalizeAccel(input: string): string {
-  if (!input) return "Alt+Z";
+  if (!input) return "Alt+Shift+Z";
   return input
     .split("+")
     .map(s => s.trim().toLowerCase().replace(/^(cmd|ctrl|commandorcontrol)$/, "CommandOrControl"))

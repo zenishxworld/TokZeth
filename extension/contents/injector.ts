@@ -26,7 +26,7 @@ document.addEventListener("selectionchange", () => {
   debounceTimer = setTimeout(saveCurrentSelection, 80);
 });
 
-// ---- Alt+Z keyboard shortcut ----
+// ---- Alt+Shift+Z keyboard shortcut ----
 document.addEventListener("keydown", async (e: KeyboardEvent) => {
   if (e.altKey && e.key === "z") {
     e.preventDefault();
@@ -82,10 +82,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 // ---- Shortcut-triggered inline flow ----
-// Captures a fresh live selection (Alt+Z is pressed while selection is active),
+// Captures a fresh live selection (Alt+Shift+Z is pressed while selection is active),
 // calls the API via background, then replaces inline.
 async function triggerRefine(): Promise<void> {
-  // Capture fresh — selection is still live when Alt+Z fires
+  // Capture fresh — selection is still live when Alt+Shift+Z fires
   const ctx = captureSelection();
   if (!ctx || !ctx.selectedText.trim()) return;
 

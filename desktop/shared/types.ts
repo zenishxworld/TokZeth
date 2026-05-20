@@ -39,7 +39,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  shortcut: "Alt+Z",
+  shortcut: "Alt+Shift+Z",
   mode: "compress",
   autoPaste: true,
   startupOnBoot: false,

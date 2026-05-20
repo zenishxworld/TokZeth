@@ -44,10 +44,10 @@ export function SettingsScreen({ settings, onSave, onBack }: Props) {
             className="setting-input"
             value={settings.shortcut}
             onChange={(e) => onSave({ shortcut: e.target.value })}
-            placeholder="Alt+Z"
+            placeholder="Alt+Shift+Z"
             spellCheck={false}
           />
-          <p className="setting-hint">Default: Alt+Z works system-wide in Windows.</p>
+          <p className="setting-hint">Default: Alt+Shift+Z works system-wide in Windows.</p>
         </div>
 
         {/* Default Mode */}

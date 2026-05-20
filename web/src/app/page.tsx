@@ -120,7 +120,7 @@ export default function HomePage() {
         >
           Press{" "}
           <kbd className="px-2 py-0.5 text-xs bg-[#13131f] border border-[#2a2a3d] rounded font-mono text-[#818cf8]">
-            Alt+Z
+            Alt+Shift+Z
           </kbd>{" "}
           on any selected text to optimize instantly
         </motion.p>

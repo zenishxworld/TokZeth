@@ -63,7 +63,7 @@ app.whenReady().then(() => {
 
   createWindow()
 
-  globalShortcut.register('Alt+Z', () => {
+  globalShortcut.register('Alt+Shift+Z', () => {
     const text = clipboard.readText()
     console.log('Clipboard text:', text)
     const [mainWindow] = BrowserWindow.getAllWindows()

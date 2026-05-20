@@ -23,7 +23,7 @@ export function initTray(): Tray {
   );
 
   tray = new Tray(svg);
-  tray.setToolTip("TokZeth — press Alt+Z to optimize text");
+  tray.setToolTip("TokZeth — press Alt+Shift+Z to optimize text");
 
   const contextMenu = Menu.buildFromTemplate([
     {
